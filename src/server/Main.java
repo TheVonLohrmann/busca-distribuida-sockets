@@ -12,10 +12,11 @@ public class Main {
             System.out.println("Servidor A está escutando na porta " + PORT);
 
             while (true) {
+                // Interações servido-cliente:
                 Socket clientSocket = serverSocket.accept(); // Aceita conexões do cliente
                 System.out.println("Cliente conectado: " + clientSocket.getInetAddress());
 
-                // Streams para comunicação
+                // Streams para comunicação com cliente
                 BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
 
@@ -31,6 +32,11 @@ public class Main {
 
                 System.out.println("Conexão com o cliente encerrada.");
                 clientSocket.close();
+
+                // Interações servidor-servidor:
+                Socket server_B = serverSocket.accept(); // Aceita conexões do servidor B
+                System.out.println("Conectado ao Servidor " + server_B.getInetAddress() + " : " + server_B.getPort());
+
             }
         } catch (IOException e) {
             System.err.println("Erro no servidor: " + e.getMessage());
