@@ -6,7 +6,11 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+<<<<<<< HEAD
         <module name="busca-distribuida-sockets" />
+=======
+        <module name="distributed-search" />
+>>>>>>> 9f01531daa972a3ac6992d4c3c233c04ce9e81b0
       </profile>
     </annotationProcessing>
   </component>
