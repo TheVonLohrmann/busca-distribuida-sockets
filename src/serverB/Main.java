@@ -17,8 +17,22 @@ public class Main {
             while (true){
 
                 // Interações servidor-cliente:
-                Socket clientSocket = serverSocket.accept(); // Aceita conexões do cliente
+                Socket clientSocket = serverSocket.accept(); // Aceita conexões do servidor A
                 System.out.println("Servidor conectado: " + clientSocket.getInetAddress() + " : " + clientSocket.getPort());
+
+                // Streams para comunicação com servidor cliente
+                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+
+                // Processa mensagens do servidor cliente
+                String clientMessage;
+                while ((clientMessage = in.readLine()) != null) {
+                    System.out.println("Mensagem recebida do servidor A: " + clientMessage);
+
+                    // Responde ao servidor A
+                    String response = "Servidor B processou: " + clientMessage;
+                    out.println(response);
+                }
             }
 
 
