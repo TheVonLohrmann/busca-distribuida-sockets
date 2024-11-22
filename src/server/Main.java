@@ -38,22 +38,31 @@ public class Main {
                         // Manda a resposta do cliente para o servidor B
                         outB.println(clientMessage);
 
-                        // Recebe a resposta do servidor B
-                        String serverBResponse;
-                        while ((serverBResponse = inB.readLine()) != null) {
-                            System.out.println("Mensagem recebida do Servidor B: " + serverBResponse);
+                        //if(*Verificar se a resposta está em B*){
 
-                            // Responde ao cliente
-                            out.println(serverBResponse);
+                            // Recebe a resposta do servidor B
+                            String serverBResponse;
+                            while ((serverBResponse = inB.readLine()) != null) {
+                                System.out.println("Mensagem recebida do Servidor B: " + serverBResponse);
+
+                                // Responde ao cliente
+                                out.println(serverBResponse);
+                            }
+                        /*else if(*Verificar se a resposta está em A*){
+
+                            String serverAResponse;
+                            while ((serverAResponse = in.readLine()) != null) {
+
+                                // Responde ao Client
+                                String response = "'"+ clientMessage +"'" + " foi encontrado em Data_A " ;
+                                out.println(serverAResponse);
+                            }
+
+                        else{
+                            out.println("Não encontrado");
                         }
 
-                      /*  String serverAResponse;
-                        while ((serverAResponse = in.readLine()) != null) {
-                            System.out.println("Mensagem recebida do Servidor A: " + serverAResponse);
-
-                            // Responde ao cliente
-                            out.println(serverAResponse);
-                        }*/
+                        */
                         //Diz se o resultado está em A. (Falta o metodo de busca, mas o codigo de comunicação está pronto)
 
                     }
