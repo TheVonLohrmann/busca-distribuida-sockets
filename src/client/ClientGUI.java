@@ -13,6 +13,8 @@ import java.net.Socket;
 public class ClientGUI extends Application {
     private PrintWriter out;
     private BufferedReader in;
+    private Process serverAProcess;
+    private Process serverBProcess;
 
     public static void main(String[] args) {
         launch(args);
@@ -26,11 +28,32 @@ public class ClientGUI extends Application {
         VBox root = new VBox(10);
         root.setPadding(new Insets(15));
 
+        // elementos da interface
         TextField inputField = new TextField();
         inputField.setPromptText("Digite a substring para busca...");
         Button sendButton = new Button("Enviar");
+        Button startServerButton = new Button("Ligar servidores");
+        Button connectButton = new Button("Conectar");
+        Button stopServerButton = new Button("Desligar servidores");
         TextArea outputArea = new TextArea();
         outputArea.setEditable(false);
+
+        // Botão para ligar os servidores
+        startServerButton.setOnAction(event -> {
+            try{
+                if (serverBProcess == null || serverBProcess.isAlive()) {
+                    serverAProcess = new ProcessBuilder("java", "-cp", "bin", "server.Main").start();
+                    outputArea.appendText("Servidor A iniciado.\n");
+                }
+
+                if (serverAProcess == null || serverAProcess.isAlive()) {
+                    serverAProcess = new ProcessBuilder("java", "-cp", "bin", "server.Main").start();
+                    outputArea.appendText("Servidor A iniciado.\n");
+                }
+            } catch (IOException ex) {
+                outputArea.appendText("Erro ao iniciar os servidores: " + ex.getMessage() + "\n");
+            }
+        });
 
         sendButton.setOnAction(e -> {
             String substring = inputField.getText();
