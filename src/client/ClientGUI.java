@@ -55,6 +55,32 @@ public class ClientGUI extends Application {
             }
         });
 
+        // botão para fazer a conexão com os servidores
+        connectButton.setOnAction(event -> {
+            try {
+                Socket socket = new Socket(SERVER_A_HOST, SERVER_A_PORT);
+                out = new PrintWriter(socket.getOutputStream(), true);
+               in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+               // Listener para resposta do servidor
+                Thread serverListener = new Thread(() -> {
+                    try {
+                        String response;
+                        while ((response = in.readLine()) != null) {
+                            outputArea.appendText("Servidor: " + response + "\n");
+                        }
+                    } catch (IOException ex) {
+                        outputArea.appendText("Conexão com o servidor encerrada.\n");
+                    }
+                });
+                serverListener.start();
+                outputArea.appendText("Servidor conectado.\n");
+            } catch (IOException ex) {
+                outputArea.appendText("Erro ao conectar ao servidor: " + ex.getMessage() + "\n");
+            }
+        });
+
+        //
         sendButton.setOnAction(e -> {
             String substring = inputField.getText();
             if (substring.isEmpty()) {
