@@ -21,7 +21,7 @@ public class Client {
                 try {
                     String serverResponse;
                     while ((serverResponse = in.readLine()) != null) {
-                        System.out.println("Servidor: " + serverResponse);
+                        System.out.println("Resultado: " + serverResponse);
                     }
                 } catch (IOException e) {
                     System.err.println("Conexão com o servidor encerrada.");

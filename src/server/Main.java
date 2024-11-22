@@ -33,12 +33,32 @@ public class Main {
                     String clientMessage;
                     while ((clientMessage = in.readLine()) != null) {
 
-                        System.out.println("Mensagem recebida: " + clientMessage);
+                        System.out.println("Mensagem recebida do Client: " + clientMessage);
 
                         // Manda a resposta do cliente para o servidor B
                         outB.println(clientMessage);
 
+                        // Recebe a resposta do servidor B
+                        String serverBResponse;
+                        while ((serverBResponse = inB.readLine()) != null) {
+                            System.out.println("Mensagem recebida do Servidor B: " + serverBResponse);
+
+                            // Responde ao cliente
+                            out.println(serverBResponse);
+                        }
+
+                      /*  String serverAResponse;
+                        while ((serverAResponse = in.readLine()) != null) {
+                            System.out.println("Mensagem recebida do Servidor A: " + serverAResponse);
+
+                            // Responde ao cliente
+                            out.println(serverAResponse);
+                        }*/
+                        //Diz se o resultado está em A. (Falta o metodo de busca, mas o codigo de comunicação está pronto)
+
                     }
+
+
 
                     System.out.println("Conexão com o cliente encerrada.");
                     clientSocket.close();

@@ -30,7 +30,7 @@ public class Main {
                     System.out.println("Mensagem recebida do servidor A: " + clientMessage);
 
                     // Responde ao servidor A
-                    String response = "Servidor B processou: " + clientMessage;
+                    String response = "'"+ clientMessage +"'" + " foi encontrado em Data_B " ;
                     out.println(response);
                 }
             }
