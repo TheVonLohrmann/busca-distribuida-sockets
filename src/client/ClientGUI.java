@@ -16,11 +16,17 @@ public class ClientGUI extends Application {
     private Process serverAProcess;
     private Process serverBProcess;
 
-    private Button startServersButton; // Declarando os botões como variáveis de classe
-    private Button stopServersButton;
-
     public static void main(String[] args) {
         launch(args);
+    }
+
+    // Método para verificar se o servidor está disponível
+    private boolean isServerAvailable(String host, int port) {
+        try (Socket socket = new Socket(host, port)) {
+            return true; // Se conseguiu conectar, está disponível
+        } catch (IOException ex) {
+            return false; // Não está disponível
+        }
     }
 
     @Override
@@ -31,9 +37,9 @@ public class ClientGUI extends Application {
         VBox root = new VBox(10);
         root.setPadding(new Insets(15));
 
-        // Inicializando os botões
-        startServersButton = new Button("Ligar Servidores");
-        stopServersButton = new Button("Desligar Servidores");
+        // Botões como variáveis locais
+        Button startServersButton = new Button("Ligar Servidores");
+        Button stopServersButton = new Button("Desligar Servidores");
         Button connectButton = new Button("Conectar ao Servidor");
         Button sendButton = new Button("Enviar");
 
@@ -54,6 +60,14 @@ public class ClientGUI extends Application {
                     serverAProcess = new ProcessBuilder("java", "-cp", "bin", "server.Main").start();
                     outputArea.appendText("Servidor A iniciado.\n");
                 }
+
+                // Adiciona um pequeno atraso para dar tempo aos servidores
+                try {
+                    Thread.sleep(2000); // 2 segundos de espera
+                } catch (InterruptedException ex) {
+                    outputArea.appendText("Erro: Interrupção durante o atraso para iniciar servidores.\n");
+                }
+
             } catch (IOException ex) {
                 outputArea.appendText("Erro ao iniciar os servidores: " + ex.getMessage() + "\n");
             }
@@ -62,6 +76,12 @@ public class ClientGUI extends Application {
         // Configuração do botão: Conectar ao Servidor
         connectButton.setOnAction(e -> {
             try {
+                // Verifica se o servidor está pronto antes de conectar
+                if (!isServerAvailable(SERVER_A_HOST, SERVER_A_PORT)) {
+                    outputArea.appendText("Servidor A não está disponível. Tentando novamente...\n");
+                    return;
+                }
+
                 Socket socket = new Socket(SERVER_A_HOST, SERVER_A_PORT);
                 out = new PrintWriter(socket.getOutputStream(), true);
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -124,4 +144,3 @@ public class ClientGUI extends Application {
         stage.show();
     }
 }
-
