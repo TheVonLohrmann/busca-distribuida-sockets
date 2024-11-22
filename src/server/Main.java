@@ -38,6 +38,8 @@ public class Main {
                         // Manda a resposta do cliente para o servidor B
                         outB.println(clientMessage);
 
+                        //*METODOS DE BUSCA AQUI*
+
                         //if(*Verificar se a resposta está em B*){
 
                             // Recebe a resposta do servidor B
