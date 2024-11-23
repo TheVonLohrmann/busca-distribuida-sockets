@@ -13,73 +13,55 @@ public class Main {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Servidor A está escutando na porta " + PORT);
 
+            // Conexão persistente com o servidor B
+            Socket socketB = new Socket(SERVER_B_HOST, SERVER_B_PORT);
+            BufferedReader inB = new BufferedReader(new InputStreamReader(socketB.getInputStream()));
+            PrintWriter outB = new PrintWriter(socketB.getOutputStream(), true);
+
             while (true) {
-                try (Socket socket = new Socket(SERVER_B_HOST, SERVER_B_PORT)) {
-                    System.out.println("Conectado ao Servidor: " + socket.getInetAddress() + " : " + socket.getPort());
+                // Aguarda conexão de um cliente
+                Socket clientSocket = serverSocket.accept();
+                System.out.println("Cliente conectado: " + clientSocket.getInetAddress());
 
-                    // Interações servidor-cliente:
-                    Socket clientSocket = serverSocket.accept(); // Aceita conexões do cliente
-                    System.out.println("Cliente conectado: " + clientSocket.getInetAddress());
-
-                    // Streams para comunicação com cliente
-                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                    PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-
-                    // Streams para comunicação com servidor B
-                    BufferedReader inB = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    PrintWriter outB = new PrintWriter(socket.getOutputStream(), true);
-
+                try (
+                        BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)
+                ) {
                     // Processa mensagens do cliente
                     String clientMessage;
                     while ((clientMessage = in.readLine()) != null) {
+                        System.out.println("Mensagem recebida do cliente: " + clientMessage);
 
-                        System.out.println("Mensagem recebida do Client: " + clientMessage);
+                        // Verifica se o comando é "sair"
+                        if ("sair".equalsIgnoreCase(clientMessage)) {
+                            System.out.println("Comando 'sair' recebido do cliente.");
 
-                        // Manda a resposta do cliente para o servidor B
-                        outB.println(clientMessage);
+                            // Envia o comando "sair" para o servidor B
+                            outB.println(clientMessage);
 
-                        //*METODOS DE BUSCA AQUI*
-
-                        //if(*Verificar se a resposta está em B*){
-
-                            // Recebe a resposta do servidor B
-                            String serverBResponse;
-                            while ((serverBResponse = inB.readLine()) != null) {
-                                System.out.println("Mensagem recebida do Servidor B: " + serverBResponse);
-
-                                // Responde ao cliente
-                                out.println(serverBResponse);
-                            }
-                        /*else if(*Verificar se a resposta está em A*){
-
-                            String serverAResponse;
-                            while ((serverAResponse = in.readLine()) != null) {
-
-                                // Responde ao Client
-                                String response = "'"+ clientMessage +"'" + " foi encontrado em Data_A " ;
-                                out.println(serverAResponse);
-                            }
-
-                        else{
-                            out.println("Não encontrado");
+                            // Encerra o servidor A
+                            System.out.println("Encerrando o servidor A...");
+                            serverSocket.close();
+                            socketB.close();
+                            return;
                         }
 
-                        */
-                        //Diz se o resultado está em A. (Falta o metodo de busca, mas o codigo de comunicação está pronto)
+                        // Envia a mensagem para o servidor B
+                        outB.println(clientMessage);
 
+                        // Recebe a resposta do servidor B
+                        String serverBResponse = inB.readLine();
+                        System.out.println("Resposta do servidor B: " + serverBResponse);
+
+                        // Envia a resposta de volta ao cliente
+                        out.println(serverBResponse);
                     }
-
-
-
-                    System.out.println("Conexão com o cliente encerrada.");
-                    clientSocket.close();
-
                 } catch (IOException e) {
-                    System.err.println("Erro ao conectar ao servidor B: " + e.getMessage());
+                    System.err.println("Erro na comunicação com o cliente: " + e.getMessage());
                 }
             }
         } catch (IOException e) {
-            System.err.println("Erro no servidor: " + e.getMessage());
+            System.err.println("Erro no servidor A: " + e.getMessage());
         }
     }
 }
