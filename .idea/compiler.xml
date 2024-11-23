@@ -7,12 +7,6 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="distributed-search" />
-
-        <module name="busca-distribuida-sockets" />
-=======
->>>>>>> 8ae0c3dfe6c74f8bea0457b32e31276b06c5c1c3
-=======
->>>>>>> c1e76e55ac50823115f16fe4c312ec092c958395
       </profile>
     </annotationProcessing>
   </component>

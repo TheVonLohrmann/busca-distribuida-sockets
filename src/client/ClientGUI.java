@@ -36,13 +36,11 @@ public class ClientGUI extends Application {
         Button sendButton = new Button("Enviar");
         Button exitButton = new Button("Sair");
 
-        // Configuração da conexão automática com o servidor ao iniciar
         try {
             clientSocket = new Socket(SERVER_A_HOST, SERVER_A_PORT);
             out = new PrintWriter(clientSocket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-            // Thread para receber mensagens do servidor
             Thread serverListener = new Thread(() -> {
                 try {
                     String response;
@@ -50,7 +48,7 @@ public class ClientGUI extends Application {
                         outputArea.appendText("Servidor: " + response + "\n");
                     }
                 } catch (IOException ex) {
-                    outputArea.appendText("Conexão com o servidor encerrada.\n");
+                    outputArea.appendText("Conexão com o servidor encerrada ou erro.\n");
                 }
             });
             serverListener.setDaemon(true);
@@ -61,38 +59,26 @@ public class ClientGUI extends Application {
             outputArea.appendText("Erro ao conectar ao servidor: " + ex.getMessage() + "\n");
         }
 
-        // Ação do botão de enviar
         sendButton.setOnAction(e -> enviarMensagem(inputField, outputArea));
-
-        // Ação do botão de sair
         exitButton.setOnAction(e -> enviarComandoSair(outputArea));
-
-        // Ação ao pressionar Enter no campo de texto
         inputField.setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.ENTER) {
                 enviarMensagem(inputField, outputArea);
             }
         });
 
-        // Adiciona os elementos na interface
         root.getChildren().addAll(inputField, sendButton, exitButton, outputArea);
-
-        // Configuração da janela
         stage.setTitle("Cliente de Busca");
         stage.setScene(new Scene(root, 400, 400));
         stage.setOnCloseRequest(e -> finalizarAplicacao());
         stage.show();
     }
 
-    /**
-     * Envia a mensagem ao servidor e trata a resposta.
-     */
     private void enviarMensagem(TextField inputField, TextArea outputArea) {
         String mensagem = inputField.getText();
         if (mensagem.isEmpty()) {
             return;
         }
-
         try {
             out.println(mensagem);
             outputArea.appendText("Enviado: " + mensagem + "\n");
@@ -102,9 +88,6 @@ public class ClientGUI extends Application {
         }
     }
 
-    /**
-     * Envia o comando "sair" ao servidor, indicando encerramento.
-     */
     private void enviarComandoSair(TextArea outputArea) {
         try {
             out.println("sair");
@@ -115,9 +98,6 @@ public class ClientGUI extends Application {
         }
     }
 
-    /**
-     * Finaliza a aplicação e encerra a conexão com o servidor.
-     */
     private void finalizarAplicacao() {
         try {
             if (clientSocket != null && !clientSocket.isClosed()) {
