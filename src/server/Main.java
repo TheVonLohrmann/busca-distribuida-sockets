@@ -51,7 +51,7 @@ public class Main {
                         // Realiza a busca local primeiro
                         String response = searchInJson(dataAFile, query);
 
-                        if (response == null || response.equals("Nenhum resultado encontrado.")) {
+                        if (response.equals("Nenhum resultado encontrado.")) {
                             // Se não encontrou no arquivo A, tenta buscar no servidor B
                             synchronized (outB) {
                                 outB.println(query); // Envia consulta ao servidor B
