@@ -1,70 +1,53 @@
 package serverB;
 
-import org.json.JSONObject;
+import utils.SearchUtil;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Main {
+    private static volatile boolean keepRunning = true;
+
     public static void main(String[] args) {
         final int PORT = 8081;
-        final String DATA_FILE = "src/serverB/data_B.json";
-
-        JSONObject dataObject = loadJsonData(DATA_FILE);
-        if (dataObject == null) {
-            System.err.println("Erro ao carregar o arquivo JSON.");
-            return;
-        }
+        final String DATA_B_FILE = "src/serverB/data_B.json";
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Servidor B escutando na porta " + PORT);
 
-            while (true) {
-                Socket clientSocket = serverSocket.accept();
+            while (keepRunning) {
+                try (Socket clientSocket = serverSocket.accept();
+                     BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                     PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
 
-                try (
-                        BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)
-                ) {
-                    String clientMessage;
-                    while ((clientMessage = in.readLine()) != null) {
-                        if ("sair".equalsIgnoreCase(clientMessage)) {
-                            System.out.println("Encerrando servidor B.");
-                            return;
-                        }
-                        String response = searchInJson(dataObject, clientMessage);
-                        out.println(response != null ? response : "Nenhum resultado encontrado.");
+                    handleClient(in, out, DATA_B_FILE);
+
+                } catch (IOException e) {
+                    if (keepRunning) {
+                        System.err.println("Erro ao lidar com o cliente: " + e.getMessage());
                     }
                 }
             }
+
         } catch (IOException e) {
-            System.err.println("Erro no servidor B: " + e.getMessage());
+            System.err.println("Erro ao iniciar o servidor B: " + e.getMessage());
         }
+        System.out.println("Servidor B desligado.");
     }
 
-    private static JSONObject loadJsonData(String filePath) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            StringBuilder jsonBuilder = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                jsonBuilder.append(line);
+    private static void handleClient(BufferedReader in, PrintWriter out, String DATA_B_FILE) throws IOException {
+        String clientMessage;
+        while ((clientMessage = in.readLine()) != null) {
+            System.out.println("Mensagem recebida do servidor A: " + clientMessage);
+            if ("sair".equalsIgnoreCase(clientMessage)) {
+                System.out.println("Encerrando o servidor B...");
+                out.println("Encerrando o servidor B.");
+                keepRunning = false; // Sinalizando para desligar o servidor
+                break;
             }
-            return new JSONObject(jsonBuilder.toString());
-        } catch (IOException e) {
-            System.err.println("Erro ao carregar JSON: " + e.getMessage());
-            return null;
+            String results = SearchUtil.searchInJson(DATA_B_FILE, clientMessage);
+            System.out.println("Resultados enviados ao servidor A: " + results);
+            out.println(results);
         }
-    }
-
-    private static String searchInJson(JSONObject dataObject, String query) {
-        try {
-            JSONObject titleObject = dataObject.getJSONObject("title");
-            if (titleObject.has(query)) {
-                return "Servidor B encontrou: " + titleObject.getString(query);
-            }
-        } catch (Exception e) {
-            return "Erro ao buscar JSON: " + e.getMessage();
-        }
-        return null;
     }
 }
