@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+<<<<<<< HEAD
+      <module fileurl="file://$PROJECT_DIR$/busca-distribuida-sockets.iml" filepath="$PROJECT_DIR$/busca-distribuida-sockets.iml" />
+=======
+      <module fileurl="file://$PROJECT_DIR$/distributed-search.iml" filepath="$PROJECT_DIR$/distributed-search.iml" />
+>>>>>>> 9f01531daa972a3ac6992d4c3c233c04ce9e81b0
+    </modules>
+  </component>
+</project>
