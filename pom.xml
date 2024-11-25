@@ -10,8 +10,15 @@
         <maven.compiler.target>17</maven.compiler.target>
     </properties>
 
-    <!-- Adicione a seção <dependencies> abaixo -->
     <dependencies>
+        <!-- Dependência para JSON -->
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20210307</version>
+        </dependency>
+
+        <!-- Dependência para JavaFX -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
