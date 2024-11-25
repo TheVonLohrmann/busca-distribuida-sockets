@@ -11,64 +11,23 @@ public class Main {
         final String SERVER_B_HOST = "127.0.0.1";
         final int SERVER_B_PORT = 8081;
 
-        final String dataAFile = "src/server/data_A.json"; // Caminho para o arquivo JSON local
+        final String dataAFile = "src/server/data_A.json";  // Arquivo JSON para o Servidor A
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Servidor A está escutando na porta " + PORT);
 
-            // Conexão persistente com o servidor B
-            Socket socketB = new Socket(SERVER_B_HOST, SERVER_B_PORT);
-            BufferedReader inB = new BufferedReader(new InputStreamReader(socketB.getInputStream()));
-            PrintWriter outB = new PrintWriter(socketB.getOutputStream(), true);
+            try (Socket socketB = new Socket(SERVER_B_HOST, SERVER_B_PORT);
+                 BufferedReader inB = new BufferedReader(new InputStreamReader(socketB.getInputStream()));
+                 PrintWriter outB = new PrintWriter(socketB.getOutputStream(), true)) {
 
-            while (true) {
-                // Aguarda conexão de um cliente
-                Socket clientSocket = serverSocket.accept();
-                System.out.println("Cliente conectado: " + clientSocket.getInetAddress());
+                while (true) {
+                    try (Socket clientSocket = serverSocket.accept();
+                         BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                         PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
 
-                try (
-                        BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)
-                ) {
-                    String clientMessage;
-
-                    while ((clientMessage = in.readLine()) != null) {
-                        System.out.println("Mensagem recebida do cliente: " + clientMessage);
-
-                        // Verifica se o comando é "sair"
-                        if ("sair".equalsIgnoreCase(clientMessage)) {
-                            System.out.println("Comando 'sair' recebido do cliente.");
-                            outB.println("sair"); // Envia o comando para o servidor B
-                            System.out.println("Encerrando o servidor A...");
-                            serverSocket.close();
-                            socketB.close();
-                            return;
-                        }
-
-                        // Criação de uma variável final para a query
-                        final String query = clientMessage;
-
-                        // Realiza a busca local primeiro
-                        String response = searchInJson(dataAFile, query);
-
-                        if (response.equals("Nenhum resultado encontrado.")) {
-                            // Se não encontrou no arquivo A, tenta buscar no servidor B
-                            synchronized (outB) {
-                                outB.println(query); // Envia consulta ao servidor B
-                            }
-                            response = inB.readLine(); // Recebe resposta do servidor B
-                        }
-
-                        // Envia a resposta ao cliente
-                        if (response != null) {
-                            System.out.println("Resposta enviada ao cliente: " + response);
-                            out.println(response);
-                        } else {
-                            out.println("Nenhum resultado encontrado.");
-                        }
+                        System.out.println("Cliente conectado: " + clientSocket.getInetAddress());
+                        handleClient(in, out, inB, outB, dataAFile);
                     }
-                } catch (IOException e) {
-                    System.err.println("Erro na comunicação com o cliente: " + e.getMessage());
                 }
             }
         } catch (IOException e) {
@@ -76,46 +35,135 @@ public class Main {
         }
     }
 
-    /**
-     * Realiza a busca no arquivo JSON local.
-     *
-     * @param filePath Caminho do arquivo JSON.
-     * @param query Substring a ser buscada.
-     * @return Resultado da busca ou mensagem de erro.
-     */
-    private static String searchInJson(String filePath, String query) {
-        String result = null;
+    private static void handleClient(BufferedReader in, PrintWriter out, BufferedReader inB, PrintWriter outB, String dataAFile) throws IOException {
+        String clientMessage;
+        while ((clientMessage = in.readLine()) != null) {
+            System.out.println("Mensagem recebida do cliente: " + clientMessage);
 
+            if ("sair".equalsIgnoreCase(clientMessage)) {
+                System.out.println("Encerrando o servidor A...");
+                outB.println("sair");
+                return;
+            }
+
+            // Buscando no JSON local do Servidor A
+            String localResults = searchInJson(dataAFile, clientMessage);
+
+            if (!localResults.equals("Nenhum resultado encontrado.")) {
+                // Se encontrou localmente, envia ao cliente
+                System.out.println("Resposta ao cliente (Servidor A):\n" + localResults);
+                out.println(localResults);
+            } else {
+                // Caso não tenha encontrado localmente, consulta o Servidor B
+                System.out.println("Enviando mensagem para o Servidor B: " + clientMessage);
+                outB.println(clientMessage);
+
+                // Garantir que a resposta do Servidor B seja lida completamente
+                StringBuilder serverBResults = new StringBuilder();
+                String line;
+                boolean isEmptyResponse = true;
+                while ((line = inB.readLine()) != null) {
+                    isEmptyResponse = false;
+                    serverBResults.append(line).append("\n");
+                }
+
+                if (isEmptyResponse) {
+                    System.out.println("Nenhuma resposta recebida do Servidor B.");
+                } else {
+                    System.out.println("Resposta recebida do Servidor B:\n" + serverBResults.toString());
+                    // Enviar a resposta completa para o cliente
+                    out.println(serverBResults.toString());
+                }
+            }
+        }
+    }
+
+
+
+    private static String searchInJson(String filePath, String query) {
+        StringBuilder results = new StringBuilder();
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
-            // Lê o conteúdo completo do arquivo JSON
             StringBuilder jsonContent = new StringBuilder();
             String line;
             while ((line = br.readLine()) != null) {
                 jsonContent.append(line);
             }
 
-            // Converte o conteúdo em um objeto JSON
-            JSONObject jsonObject = new JSONObject(jsonContent.toString());
-            JSONObject titles = jsonObject.getJSONObject("title");
+            if (jsonContent.length() == 0) {
+                return "Erro: O arquivo JSON está vazio.";
+            }
 
-            // Itera sobre as chaves (índices) e verifica se o título contém a query
+            // Parse o JSON como um objeto
+            JSONObject data = new JSONObject(jsonContent.toString());
+            JSONObject titles = data.getJSONObject("title");
+            JSONObject abstracts = data.getJSONObject("abstract");
+            JSONObject labels = data.getJSONObject("label");
+
+            // Itere sobre as chaves do JSON
             for (String key : titles.keySet()) {
-                String title = titles.getString(key);
+                String title = titles.optString(key, "");
+                String abstractText = abstracts.optString(key, "");
+                String label = labels.optString(key, "");
 
-                // Ajusta a comparação para ser case-insensitive e verificar a chave ou o valor
-                if (key.equals(query)) {
-                    result = title;
-                    break;
+                // Verifica se a query está no título ou resumo
+                if (kmpSearch(title.toLowerCase(), query.toLowerCase()) ||
+                        kmpSearch(abstractText.toLowerCase(), query.toLowerCase())) {
+                    results.append("Título: ").append(title).append("\n")
+                            .append("Resumo: ").append(abstractText).append("\n")
+                            .append("Categoria: ").append(label).append("\n\n");
                 }
             }
-        } catch (IOException e) {
-            System.err.println("Erro ao ler o arquivo JSON: " + e.getMessage());
-            result = "Erro ao acessar o arquivo local.";
         } catch (Exception e) {
-            System.err.println("Erro ao processar o JSON: " + e.getMessage());
-            result = "Erro ao processar o arquivo JSON.";
+            return "Erro ao processar o JSON: " + e.getMessage();
         }
 
-        return result != null ? result : "Nenhum resultado encontrado.";
+        return results.length() > 0 ? results.toString() : "Nenhum resultado encontrado.";
+    }
+
+    private static boolean kmpSearch(String text, String pattern) {
+        if (pattern.isEmpty()) return true;
+        if (text.isEmpty()) return false;
+
+        int[] lps = computeLPSArray(pattern);
+        int i = 0, j = 0;
+
+        while (i < text.length()) {
+            if (pattern.charAt(j) == text.charAt(i)) {
+                i++;
+                j++;
+            }
+            if (j == pattern.length()) {
+                return true; // Padrão encontrado
+            } else if (i < text.length() && pattern.charAt(j) != text.charAt(i)) {
+                if (j != 0) {
+                    j = lps[j - 1];
+                } else {
+                    i++;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static int[] computeLPSArray(String pattern) {
+        int[] lps = new int[pattern.length()];
+        int len = 0;
+        int i = 1;
+
+        while (i < pattern.length()) {
+            if (pattern.charAt(i) == pattern.charAt(len)) {
+                len++;
+                lps[i] = len;
+                i++;
+            } else {
+                if (len != 0) {
+                    len = lps[len - 1];
+                } else {
+                    lps[i] = len;
+                    i++;
+                }
+            }
+        }
+        return lps;
     }
 }
