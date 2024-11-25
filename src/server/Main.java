@@ -1,85 +1,88 @@
 package server;
 
+import utils.SearchUtil;
 import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 
 public class Main {
+    private static volatile boolean keepRunning = true;
+
     public static void main(String[] args) {
         final int PORT = 8080;
         final String SERVER_B_HOST = "127.0.0.1";
         final int SERVER_B_PORT = 8081;
+        final String DATA_A_FILE = "src/server/data_A.json";
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Servidor A está escutando na porta " + PORT);
 
-            while (true) {
-                try (Socket socket = new Socket(SERVER_B_HOST, SERVER_B_PORT)) {
-                    System.out.println("Conectado ao Servidor: " + socket.getInetAddress() + " : " + socket.getPort());
+            while (keepRunning) {
+                try (Socket clientSocket = serverSocket.accept();
+                     BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                     PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+                     Socket socketB = new Socket(SERVER_B_HOST, SERVER_B_PORT);
+                     BufferedReader inB = new BufferedReader(new InputStreamReader(socketB.getInputStream()));
+                     PrintWriter outB = new PrintWriter(socketB.getOutputStream(), true)) {
 
-                    // Interações servidor-cliente:
-                    Socket clientSocket = serverSocket.accept(); // Aceita conexões do cliente
                     System.out.println("Cliente conectado: " + clientSocket.getInetAddress());
-
-                    // Streams para comunicação com cliente
-                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                    PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-
-                    // Streams para comunicação com servidor B
-                    BufferedReader inB = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    PrintWriter outB = new PrintWriter(socket.getOutputStream(), true);
-
-                    // Processa mensagens do cliente
-                    String clientMessage;
-                    while ((clientMessage = in.readLine()) != null) {
-
-                        System.out.println("Mensagem recebida do Client: " + clientMessage);
-
-                        // Manda a resposta do cliente para o servidor B
-                        outB.println(clientMessage);
-
-                        //*METODOS DE BUSCA AQUI*
-
-                        //if(*Verificar se a resposta está em B*){
-
-                            // Recebe a resposta do servidor B
-                            String serverBResponse;
-                            while ((serverBResponse = inB.readLine()) != null) {
-                                System.out.println("Mensagem recebida do Servidor B: " + serverBResponse);
-
-                                // Responde ao cliente
-                                out.println(serverBResponse);
-                            }
-                        /*else if(*Verificar se a resposta está em A*){
-
-                            String serverAResponse;
-                            while ((serverAResponse = in.readLine()) != null) {
-
-                                // Responde ao Client
-                                String response = "'"+ clientMessage +"'" + " foi encontrado em Data_A " ;
-                                out.println(serverAResponse);
-                            }
-
-                        else{
-                            out.println("Não encontrado");
-                        }
-
-                        */
-                        //Diz se o resultado está em A. (Falta o metodo de busca, mas o codigo de comunicação está pronto)
-
-                    }
-
-
-
-                    System.out.println("Conexão com o cliente encerrada.");
-                    clientSocket.close();
+                    handleClient(in, out, inB, outB, DATA_A_FILE, socketB);
 
                 } catch (IOException e) {
-                    System.err.println("Erro ao conectar ao servidor B: " + e.getMessage());
+                    if (keepRunning) {
+                        System.err.println("Erro ao lidar com o cliente: " + e.getMessage());
+                    }
                 }
             }
+
         } catch (IOException e) {
-            System.err.println("Erro no servidor: " + e.getMessage());
+            System.err.println("Erro no servidor A: " + e.getMessage());
+        }
+        System.out.println("Servidor A desligado.");
+    }
+
+    private static void handleClient(BufferedReader in, PrintWriter out,
+                                     BufferedReader inB, PrintWriter outB,
+                                     String dataAFile, Socket socketB) throws IOException {
+        String clientMessage;
+        while ((clientMessage = in.readLine()) != null) {
+            System.out.println("Mensagem recebida do cliente: " + clientMessage);
+
+            if ("sair".equalsIgnoreCase(clientMessage)) {
+                System.out.println("Encerrando o servidor A...");
+                outB.println("sair");
+                keepRunning = false; // Sinalizando para desligar o servidor
+                break;
+            }
+
+            // Utiliza SearchUtil para buscar nos dados do servidor A
+            String localResults = SearchUtil.searchInJson(dataAFile, clientMessage);
+
+            if (!localResults.equals("Nenhum resultado encontrado.")) {
+                out.println(localResults);
+            } else {
+                outB.println(clientMessage);
+                System.out.println("Mensagem enviada ao servidor B: " + clientMessage);
+
+                // Lendo a resposta do servidor B e enviando cada linha imediatamente para o cliente
+                boolean responseStarted = false;
+                try {
+                    socketB.setSoTimeout(5000); // 5 segundos de tempo limite
+                    String line;
+                    while ((line = inB.readLine()) != null) {
+                        out.println(line);
+                        responseStarted = true;
+                        System.out.println("Resposta do servidor B: " + line);
+                    }
+                } catch (SocketTimeoutException e) {
+                    System.err.println("Tempo limite ao aguardar a resposta do servidor B");
+                } catch (IOException e) {
+                    System.err.println("Erro na comunicação com o servidor B: " + e.getMessage());
+                }
+
+                if (!responseStarted) {
+                    out.println("Nenhum resultado encontrado no servidor B.");
+                }
+            }
         }
     }
 }
