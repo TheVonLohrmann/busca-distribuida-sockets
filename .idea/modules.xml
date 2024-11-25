@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/BuscaDistribuidaSockets.iml" filepath="$PROJECT_DIR$/BuscaDistribuidaSockets.iml" />
+      <module fileurl="file://$PROJECT_DIR$/distributed-search.iml" filepath="$PROJECT_DIR$/distributed-search.iml" />
     </modules>
   </component>
 </project>
